@@ -17,36 +17,59 @@ def pdf_tool():
     return str(tool) if tool.exists() else 'pdftotext'
 def parse_pdf(data):
     with tempfile.TemporaryDirectory() as tmp:
-        path=Path(tmp)/'source.pdf';path.write_bytes(data)
-        proc=subprocess.run(
-    [pdf_tool(), '-layout', str(path), '-'],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    check=False
-)
-if proc.returncode != 0:
-    raise RuntimeError(
-        f"PDF変換エラー（終了コード: {proc.returncode}）\n"
-        f"詳細: {proc.stderr.decode('utf-8', errors='replace')}"
-    )
-    content=proc.stdout.decode('utf-8',errors='replace')
-    date=re.search(r'(20\d\d/\d\d?/\d\d?)\s+申込み現在',content)
-    rows=[]
-    for page,body in enumerate(content.split('\f'),1):
+        path = Path(tmp) / 'source.pdf'
+        path.write_bytes(data)
+        proc = subprocess.run(
+            [pdf_tool(), '-layout', str(path), '-'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"PDF変換エラー（終了コード: {proc.returncode}）\n"
+                f"詳細: {proc.stderr.decode('utf-8', errors='replace')}"
+            )
+        content = proc.stdout.decode('utf-8', errors='replace')
+
+    date = re.search(r'(20\d\d/\d\d?/\d\d?)\s+申込み現在', content)
+    rows = []
+    for page, body in enumerate(content.split('\f'), 1):
         for line in body.splitlines():
-            if '株数 Shs.' not in line:continue
-            left,right=line.split('株数 Shs.',1)
-            m=re.search(r'(?<![A-Z0-9])([0-9]{3}[0-9A-Z]0)\s+([A-Z]{2}[A-Z0-9]{10})\s*$',left)
-            if not m:continue
-            fields=re.findall(r'▲\s*[\d,]+|(?<![\w.])[\d,]+(?:\.\d+%)?|\*',right)
-            if len(fields)!=14:continue
-            try: vals=[num(fields[i]) for i in [0,1,3,4,6,7,8,9,10,11,12,13]]
-            except ValueError:continue
-            name=re.sub(r'^\s*[ABCFJKMT]\s+','',left[:m.start()].strip())
-            name=re.split(r'\s{2,}',name)[0].strip()
-            name=re.sub(r'\s+(普通株式|受益証券)$','',name)
-            rows.append({'code':m.group(1),'name':name,'page':page,'values':vals})
-            return rows,date.group(1) if date else '不明'
+            if '株数 Shs.' not in line:
+                continue
+            left, right = line.split('株数 Shs.', 1)
+            m = re.search(
+                r'(?<![A-Z0-9])([0-9]{3}[0-9A-Z]0)\s+([A-Z]{2}[A-Z0-9]{10})\s*$',
+                left
+            )
+            if not m:
+                continue
+            fields = re.findall(
+                r'▲\s*[\d,]+|(?<![\w.])[\d,]+(?:\.\d+%)?|\*',
+                right
+            )
+            if len(fields) != 14:
+                continue
+            try:
+                vals = [num(fields[i]) for i in
+                        [0, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13]]
+            except ValueError:
+                continue
+            name = re.sub(
+                r'^\s*[ABCFJKMT]\s+', '',
+                left[:m.start()].strip()
+            )
+            name = re.split(r'\s{2,}', name)[0].strip()
+            name = re.sub(r'\s+(普通株式|受益証券)$', '', name)
+            rows.append({
+                'code': m.group(1),
+                'name': name,
+                'page': page,
+                'values': vals
+            })
+
+    return rows, date.group(1) if date else '不明'
 
 def get_latest():
     r=requests.get(INDEX,headers=HEADERS,timeout=25);r.raise_for_status()
