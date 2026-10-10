@@ -18,7 +18,17 @@ def pdf_tool():
 def parse_pdf(data):
     with tempfile.TemporaryDirectory() as tmp:
         path=Path(tmp)/'source.pdf';path.write_bytes(data)
-        proc=subprocess.run([pdf_tool(),'-layout',str(path),'-'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
+        proc=subprocess.run(
+    [pdf_tool(), '-layout', str(path), '-'],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    check=False
+)
+if proc.returncode != 0:
+    raise RuntimeError(
+        f"PDF変換エラー（終了コード: {proc.returncode}）\n"
+        f"詳細: {proc.stderr.decode('utf-8', errors='replace')}"
+    )
         content=proc.stdout.decode('utf-8',errors='replace')
     date=re.search(r'(20\d\d/\d\d?/\d\d?)\s+申込み現在',content)
     rows=[]
