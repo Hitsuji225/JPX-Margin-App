@@ -46,7 +46,7 @@ if proc.returncode != 0:
             name=re.split(r'\s{2,}',name)[0].strip()
             name=re.sub(r'\s+(普通株式|受益証券)$','',name)
             rows.append({'code':m.group(1),'name':name,'page':page,'values':vals})
-    return rows,date.group(1) if date else '不明'
+     return rows,date.group(1) if date else '不明'
 def get_latest():
     r=requests.get(INDEX,headers=HEADERS,timeout=25);r.raise_for_status()
     soup=BeautifulSoup(r.content,'html.parser')
