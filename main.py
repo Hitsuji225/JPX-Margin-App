@@ -29,7 +29,7 @@ if proc.returncode != 0:
         f"PDF変換エラー（終了コード: {proc.returncode}）\n"
         f"詳細: {proc.stderr.decode('utf-8', errors='replace')}"
     )
-        content=proc.stdout.decode('utf-8',errors='replace')
+    content=proc.stdout.decode('utf-8',errors='replace')
     date=re.search(r'(20\d\d/\d\d?/\d\d?)\s+申込み現在',content)
     rows=[]
     for page,body in enumerate(content.split('\f'),1):
